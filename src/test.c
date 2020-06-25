@@ -36,28 +36,31 @@ int main(int argc, char const* argv[]) {
 }
 
 void* consumer_thread(void* arg) {
+    int failed_cnt = 0;
     while (1) {
         void* value = cqueue_pop(queue_handle);
         // printf("Thread %lu reads queue len as %lu elements\n", *(pthread_t*)arg,
         //       cqueue_len(queue_handle));
         if (value) {
             printf("Thread %lu got item %d\n", *(pthread_t*)arg, *(int*)value);
-        } /*else {
-            printf("Thread %lu stopped, no more values\n", *(pthread_t*)arg);
-            break;
-        }*/
+        } else {
+            failed_cnt++;
+            if (failed_cnt > 100) {
+                printf("Thread %lu stopped, no more values\n", *(pthread_t*)arg);
+                break;
+            }
+        }
         usleep(100);
     }
     pthread_exit(0);
 }
 
 void* producer_thread(void* arg) {
-    for (int cnt_val = 0; cnt_val < CONSUMER_THREADS_CNT * 50; cnt_val++) {
+    for (int cnt_val = 0; cnt_val < CONSUMER_THREADS_CNT * 5; cnt_val++) {
         printf("Thread producer reads queue len as %lu elements writing %d\n",
                cqueue_len(queue_handle), cnt_val);
         int* value = malloc(sizeof(int));
         memcpy(value, &cnt_val, sizeof(int));
-        printf("Test value %d\n", *value);
         cqueue_push(queue_handle, (void*)value);
         usleep(100);
     }

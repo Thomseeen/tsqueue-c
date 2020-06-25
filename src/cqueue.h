@@ -4,8 +4,8 @@
 #ifndef CQUEUE_H
 #define CQUEUE_H
 
-#include <inttypes.h>
 #include <pthread.h>
+#include <stdint.h>
 #include <stdlib.h>
 
 typedef struct CQueueItem {
