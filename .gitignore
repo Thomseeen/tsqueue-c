@@ -1,0 +1,7 @@
+# C build artifacts
+obj/
+*.o
+*.d
+
+# Binaries
+cqueue_test
