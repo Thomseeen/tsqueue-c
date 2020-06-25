@@ -6,16 +6,16 @@ CQueueHead* cqueue_create() {
     handle->tail = NULL;
     handle->len = 0;
 
-    pthread_rwlock_t* lock = malloc(sizeof(pthread_rwlock_t));
-    pthread_rwlock_init(lock, NULL);
-    handle->rwlock = lock;
+    pthread_mutex_t* lock = malloc(sizeof(pthread_mutex_t));
+    pthread_mutex_init(lock, NULL);
+    handle->lock = lock;
 
     return handle;
 }
 
 void cqueue_destroy(CQueueHead* handle) {
-    pthread_rwlock_destroy(handle->rwlock);
-    free(handle->rwlock);
+    pthread_mutex_destroy(handle->lock);
+    free(handle->lock);
     free(handle);
 }
 
@@ -24,32 +24,25 @@ void cqueue_push(CQueueHead* handle, void* value) {
     new_item_p->value = value;
     new_item_p->next = NULL;
 
-    pthread_rwlock_wrlock(handle->rwlock);
+    pthread_mutex_lock(handle->lock);
     if (!handle->head) {
         handle->head = new_item_p;
         handle->tail = new_item_p;
-        pthread_rwlock_unlock(handle->rwlock);
     } else {
-        pthread_rwlock_unlock(handle->rwlock);
-        pthread_rwlock_wrlock(handle->rwlock);
         handle->tail->next = new_item_p;
         handle->tail = new_item_p;
-
-        handle->len++;
-        pthread_rwlock_unlock(handle->rwlock);
     }
+    handle->len++;
+    pthread_mutex_unlock(handle->lock);
 }
 
 void* cqueue_pop(CQueueHead* handle) {
-    pthread_rwlock_rdlock(handle->rwlock);
+    pthread_mutex_lock(handle->lock);
+    void* return_val;
 
     if (!handle->head) {
-        pthread_rwlock_unlock(handle->rwlock);
-        return NULL;
+        return_val = NULL;
     } else {
-        pthread_rwlock_unlock(handle->rwlock);
-        pthread_rwlock_wrlock(handle->rwlock);
-
         CQueueItem* item_copy_p = handle->head;
         handle->head = item_copy_p->next;
 
@@ -58,7 +51,15 @@ void* cqueue_pop(CQueueHead* handle) {
         free(item_copy_p);
         handle->len--;
 
-        pthread_rwlock_unlock(handle->rwlock);
-        return return_value_p;
+        return_val = return_value_p;
     }
+    pthread_mutex_unlock(handle->lock);
+    return return_val;
+}
+
+uint64_t cqueue_len(CQueueHead* handle) {
+    pthread_mutex_lock(handle->lock);
+    uint64_t return_len = handle->len;
+    pthread_mutex_unlock(handle->lock);
+    return return_len;
 }

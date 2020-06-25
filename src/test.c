@@ -16,7 +16,7 @@ pthread_t consumer_thread_id[CONSUMER_THREADS_CNT];
 
 int main(int argc, char const* argv[]) {
     queue_handle = cqueue_create();
-    printf("New queue with %lu elements\n", queue_handle->len);
+    printf("New queue with %lu elements\n", cqueue_len(queue_handle));
 
     pthread_create(&producer_thread_id, NULL, producer_thread, NULL);
 
@@ -38,25 +38,29 @@ int main(int argc, char const* argv[]) {
 void* consumer_thread(void* arg) {
     while (1) {
         void* value = cqueue_pop(queue_handle);
-        printf("Thread %lu reads queue len as %lu elements\n", *(pthread_t*)arg, queue_handle->len);
+        // printf("Thread %lu reads queue len as %lu elements\n", *(pthread_t*)arg,
+        //       cqueue_len(queue_handle));
         if (value) {
             printf("Thread %lu got item %d\n", *(pthread_t*)arg, *(int*)value);
-            usleep(10000);
-        } else {
+        } /*else {
             printf("Thread %lu stopped, no more values\n", *(pthread_t*)arg);
             break;
-        }
+        }*/
+        usleep(100);
     }
     pthread_exit(0);
 }
 
 void* producer_thread(void* arg) {
-    for (int cnt_val = 0; cnt_val < CONSUMER_THREADS_CNT * 5; cnt_val++) {
+    for (int cnt_val = 0; cnt_val < CONSUMER_THREADS_CNT * 50; cnt_val++) {
+        printf("Thread producer reads queue len as %lu elements writing %d\n",
+               cqueue_len(queue_handle), cnt_val);
         int* value = malloc(sizeof(int));
         memcpy(value, &cnt_val, sizeof(int));
-        cqueue_push(queue_handle, (void*)&value);
+        printf("Test value %d\n", *value);
+        cqueue_push(queue_handle, (void*)value);
         usleep(100);
-        cnt_val++;
     }
+    printf("Thread producer stopped, no more values\n");
     pthread_exit(0);
 }
